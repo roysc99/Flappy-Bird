@@ -39,6 +39,7 @@ int main()
 
     bool game_started = false; //flag to check if the game has started
     bn::fixed floor_offset = 0; //floor offset to keep track of floor sprite positions
+    bool bird_alive = true;
 
     while (true)
     {
@@ -46,9 +47,15 @@ int main()
         {
             if (!game_started)
             {
-                //clear the text sprites when the game starts
+                //clear the text sprites when the game starts or restarts
                 text_sprites.clear();
-                game_started = true; //mark the game as started
+                //remark game state
+                game_started = true; 
+                bird_alive = true;
+                //reset bird position
+                flappybird.set_position(0,0);
+                //reset floor offset
+                floor_offset = 0;
             }
 
             flappybird.set_y(flappybird.y() - 20); //move bird up
@@ -58,20 +65,32 @@ int main()
             flappybird.set_y(flappybird.y() + .75); //apply gravity only if the game has started
         }
 
-        //update the floor offset
-        floor_offset -= bn::fixed(0.5); //0.5 is the speed the floor moves
+        if (bird_alive){
+            //update the floor offset
+            floor_offset -= bn::fixed(0.5); //0.5 is the speed the floor moves
 
-        //reset the offset if it exceeds the width of a sprite
-        if(floor_offset <= -bn::fixed(32))
-        {
-            floor_offset += bn::fixed(32);
+            //reset the offset if it exceeds the width of a sprite
+            if(floor_offset <= -bn::fixed(32))
+            {
+                floor_offset += bn::fixed(32);
+            }
+
+            //move our sprites left based on the offset
+            for(int i = 0; i < floor_sprites.size(); ++i)
+            {
+                bn::fixed x_position = bn::fixed(-104) + bn::fixed(i * 32) + floor_offset;
+                floor_sprites[i].set_x(x_position);
+            }
         }
 
-        //move our sprites left based on the offset
-        for(int i = 0; i < floor_sprites.size(); ++i)
+        //collision with floor
+        if(flappybird.y() + 8 > 48)
         {
-            bn::fixed x_position = bn::fixed(-104) + bn::fixed(i * 32) + floor_offset;
-            floor_sprites[i].set_x(x_position);
+            flappybird.set_position(flappybird.x(), flappybird.y());
+            text_sprites.clear();
+            text_generator.generate(-93, -68, "Game over (Press up key to restart)", text_sprites);
+            bird_alive = false;
+            game_started = false;
         }
 
         bn::core::update();
