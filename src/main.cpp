@@ -10,8 +10,7 @@
 #include "bn_regular_bg_items_background.h"
 #include "bn_sprite_items_flappybird.h"
 #include "bn_sprite_items_tuberoot.h"
-#include "bn_sprite_items_tuberoot.h"
-
+#include "bn_sprite_items_floor.h"
 
 int main()
 {
@@ -21,15 +20,25 @@ int main()
     bn::regular_bg_ptr background = bn::regular_bg_items::background.create_bg(0, 0);
 
     //load bird sprite
-    bn::sprite_ptr flappybird = bn::sprite_items::flappybird.create_sprite(0,0);
+    bn::sprite_ptr flappybird = bn::sprite_items::flappybird.create_sprite(0, 0);
 
     //object to generate text
     bn::sprite_text_generator text_generator(common::variable_8x8_sprite_font);
     bn::vector<bn::sprite_ptr, 32> text_sprites;
-    //printing default text
     text_generator.generate(-60, -68, "(Press up key to start)", text_sprites);
 
-   bool game_started = false; //flag to check if the game has started
+    //generate floor
+    bn::vector<bn::sprite_ptr, 9> floor_sprites; //240/32 = 7.5, so 9 sprites for full coverage
+    for(int i = 0; i < 9; i++)
+    {
+        int x = -104 + (i * 32); 
+        int y = 64;
+        bn::sprite_ptr floor = bn::sprite_items::floor.create_sprite(x, y);
+        floor_sprites.push_back(floor);
+    }
+
+    bool game_started = false; //flag to check if the game has started
+    bn::fixed floor_offset = 0; //floor offset to keep track of floor sprite positions
 
     while (true)
     {
@@ -37,16 +46,32 @@ int main()
         {
             if (!game_started)
             {
-                // Clear the text sprites when the game starts
+                //clear the text sprites when the game starts
                 text_sprites.clear();
-                game_started = true; // Mark the game as started
+                game_started = true; //mark the game as started
             }
 
-            flappybird.set_y(flappybird.y() - 20); // Move the bird up
+            flappybird.set_y(flappybird.y() - 20); //move bird up
         }
         else if (game_started)
         {
-            flappybird.set_y(flappybird.y() + 1); // Apply gravity only if the game has started
+            flappybird.set_y(flappybird.y() + .75); //apply gravity only if the game has started
+        }
+
+        //update the floor offset
+        floor_offset -= bn::fixed(0.5); //0.5 is the speed the floor moves
+
+        //reset the offset if it exceeds the width of a sprite
+        if(floor_offset <= -bn::fixed(32))
+        {
+            floor_offset += bn::fixed(32);
+        }
+
+        //move our sprites left based on the offset
+        for(int i = 0; i < floor_sprites.size(); ++i)
+        {
+            bn::fixed x_position = bn::fixed(-104) + bn::fixed(i * 32) + floor_offset;
+            floor_sprites[i].set_x(x_position);
         }
 
         bn::core::update();
